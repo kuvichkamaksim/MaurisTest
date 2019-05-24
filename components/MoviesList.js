@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, ScrollView, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Modal } from "react-native";
 import getMoviesData from "../lib/queryToTvMaze.js";
 import convertMonth from "../lib/monthConverter.js";
 import React, {Component} from "react";
@@ -11,46 +11,13 @@ export default class MoviesList extends Component<Props> {
     super(props);
     this.state = { movies: [],
                    date: "",
-                   isExpanded: false
+                   isExpanded: false,
+                   openedImage: -1
                  };
     this._onClick = this._onClick.bind(this);
+    this.zoomImage = this.zoomImage.bind(this);
+    this.hideImage = this.hideImage.bind(this);
   }
-
-
-// 'id',
-// 'url',
-// 'name',
-// 'season',
-// 'number',
-// 'airdate',
-// 'airtime',
-//  'airstamp',
-// 'runtime',
-// 'image',
-// 'summary',
-// 'show',
-// '_links'
-
-// 'id',
-// 'url',
-// 'name',
-// 'type',
-// 'language',
-// 'genres',
-// 'status',
-// 'runtime',
-// 'premiered',
-// 'officialSite',
-// 'schedule',
-// 'rating',
-// 'weight',
-// 'network',
-// 'webChannel',
-// 'externals',
-// 'image',
-// 'summary',
-// 'updated',
-// '_links'
 
   static navigationOptions = {
     headerLeft: null,
@@ -74,8 +41,16 @@ export default class MoviesList extends Component<Props> {
     ));
   }
 
+  zoomImage(index) {
+    this.setState({ openedImage: index });
+  }
+
+  hideImage() {
+    this.setState({ openedImage: -1 });
+  }
+
   WholeList(numberOfMovies) {
-    return this.state.movies.map( (movie) => {
+    return this.state.movies.map( (movie, index) => {
 
       const img = {
         uri: movie.show.image ?
@@ -86,9 +61,15 @@ export default class MoviesList extends Component<Props> {
       return (
         <View style={styles.movieContainer}>
 
-          <Image source={img}
-                 style={styles.movieLogo}
-          />
+          <TouchableOpacity
+            style={styles.movieLogo}
+            activeOpacity = { 0.5 }
+            onPress={ () => this.zoomImage(index) }
+          >
+            <Image source={img}
+                   style={styles.movieLogo}
+            />
+          </TouchableOpacity>
 
           <View style={styles.movieInfo}>
 
@@ -116,9 +97,30 @@ export default class MoviesList extends Component<Props> {
 
   render() {
     const {navigate} = this.props.navigation;
+    const uri = this.state.openedImage === -1 ?
+                  "" :
+                  this.state.movies[this.state.openedImage].show.image.original;
 
     return (
       <ScrollView style={styles.mainContainer}>
+
+        <Modal
+          animationType="slide"
+          transparent={false}
+          visible={this.state.openedImage !== -1}
+          onRequestClose={this.hideImage}
+        >
+          <TouchableOpacity
+            style={styles.shownZoom}
+            activeOpacity = { 0.5 }
+            onPress={this.hideImage}
+          >
+            <Image source={{ uri }}
+              style={styles.zoomImage}
+            />
+          </TouchableOpacity>
+        </Modal>
+
         <View style={styles.title}>
           <Text style={styles.titleText}>
             {this.state.date}
@@ -150,8 +152,7 @@ export default class MoviesList extends Component<Props> {
 
 const styles = StyleSheet.create({
   mainContainer: {
-    flex: 1,
-    height: 200
+    flex: 1
   },
   movieContainer: {
     flex: 1,
@@ -217,5 +218,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginRight: "auto",
     marginLeft: "auto"
+  },
+  hiddenZoom: {
+    display: "none"
+  },
+  shownZoom: {
+    height: "100%",
+    width: "100%"
+  },
+  zoomImage: {
+    height: "100%",
+    width: "100%",
+    resizeMode: "contain"
   },
 });
